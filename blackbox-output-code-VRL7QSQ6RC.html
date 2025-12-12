@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Polícia Civil RP - Jogo de Roleplay</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .hidden { display: none; }
+        form { margin-bottom: 20px; }
+        #adminPanel { background-color: #f0f0f0; padding: 10px; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <h1>Polícia Civil RP - Sistema de Boletins</h1>
+    <p>Bem-vindo ao jogo de roleplay! Registre seu personagem e boletins aqui.</p>
+
+    <!-- Login -->
+    <div id="loginSection">
+        <h2>Login</h2>
+        <form id="loginForm">
+            <label>Nome: <input type="text" id="loginName" required></label><br>
+            <label>Senha: <input type="password" id="loginPass" required></label><br>
+            <button type="submit">Entrar</button>
+        </form>
+        <p>Não tem conta? <button onclick="showRegister()">Registrar Personagem</button></p>
+    </div>
+
+    <!-- Registro de Personagem -->
+    <div id="registerSection" class="hidden">
+        <h2>Registrar Personagem</h2>
+        <form id="registerForm">
+            <label>Nome: <input type="text" id="regName" required></label><br>
+            <label>Senha: <input type="password" id="regPass" required></label><br>
+            <button type="submit">Registrar</button>
+        </form>
+        <button onclick="showLogin()">Voltar ao Login</button>
+    </div>
+
+    <!-- Área Logada -->
+    <div id="userArea" class="hidden">
+        <h2>Bem-vindo, <span id="userName"></span>!</h2>
+        <h3>Registrar Boletim</h3>
+        <form id="reportForm">
+            <label>Descrição do Incidente: <textarea id="reportDesc" required></textarea></label><br>
+            <button type="submit">Enviar Boletim</button>
+        </form>
+        <h3>Seus Boletins</h3>
+        <ul id="userReports"></ul>
+        <button onclick="logout()">Sair</button>
+    </div>
+
+    <!-- Painel Admin (Acesso Restrito) -->
+    <div id="adminSection" class="hidden">
+        <h2>Painel do Diretor Geral/Executivo</h2>
+        <p>Senha Mestre: <input type="password" id="masterPass"></p>
+        <button onclick="checkAdmin()">Acessar Todas as Senhas</button>
+        <div id="adminPanel" class="hidden">
+            <h3>Todas as Contas Registradas</h3>
+            <ul id="allAccounts"></ul>
+        </div>
+        <button onclick="hideAdmin()">Fechar</button>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let accounts = JSON.parse(localStorage.getItem('rpAccounts')) || {}; // Simula banco de dados local
+        let reports = JSON.parse(localStorage.getItem('rpReports')) || {}; // Boletins por usuário
+
+        // Mostrar registro
+        function showRegister() {
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('registerSection').classList.remove('hidden');
+        }
+
+        // Mostrar login
+        function showLogin() {
+            document.getElementById('registerSection').classList.add('hidden');
+            document.getElementById('loginSection').classList.remove('hidden');
+        }
+
+        // Registrar personagem
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const name = document.getElementById('regName').value;
+            const pass = document.getElementById('regPass').value;
+            if (accounts[name]) {
+                alert('Nome já existe!');
+                return;
+            }
+            accounts[name] = pass;
+            reports[name] = [];
+            localStorage.setItem('rpAccounts', JSON.stringify(accounts));
+            localStorage.setItem('rpReports', JSON.stringify(reports));
+            alert('Personagem registrado!');
+            showLogin();
+        });
+
+        // Login
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const name = document.getElementById('loginName').value;
+            const pass = document.getElementById('loginPass').value;
+            if (accounts[name] === pass) {
+                currentUser = name;
+                document.getElementById('userName').textContent = name;
+                document.getElementById('loginSection').classList.add('hidden');
+                document.getElementById('userArea').classList.remove('hidden');
+                loadUserReports();
+            } else {
+                alert('Nome ou senha incorretos!');
+            }
+        });
+
+        // Registrar boletim
+        document.getElementById('reportForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const desc = document.getElementById('reportDesc').value;
+            reports[currentUser].push(desc);
+            localStorage.setItem('rpReports', JSON.stringify(reports));
+            loadUserReports();
+            alert('Boletim registrado!');
+        });
+
+        // Carregar boletins do usuário
+        function loadUserReports() {
+            const list = document.getElementById('userReports');
+            list.innerHTML = '';
+            reports[currentUser].forEach(report => {
+                const li = document.createElement('li');
+                li.textContent = report;
+                list.appendChild(li);
+            });
+        }
+
+        // Logout
+        function logout() {
+            currentUser = null;
+            document.getElementById('userArea').classList.add('hidden');
+            document.getElementById('loginSection').classList.remove('hidden');
+        }
+
+        // Mostrar painel admin
+        document.querySelector('button[onclick="showAdmin()"]').style.display = 'none'; // Esconde botão, simula acesso direto
+        // Para RP, adicione um botão ou link secreto aqui.
+
+        // Verificar senha mestre (para Diretor Geral/Executivo)
+        function checkAdmin() {
+            const master = document.getElementById('masterPass').value;
+            if (master === 'admin123') { // Senha mestre fictícia - mude para o jogo!
+                document.getElementById('adminPanel').classList.remove('hidden');
+                const list = document.getElementById('allAccounts');
+                list.innerHTML = '';
+                for (const [name, pass] of Object.entries(accounts)) {
+                    const li = document.createElement('li');
+                    li.textContent = `Nome: ${name}, Senha: ${pass}`;
+                    list.appendChild(li);
+                }
+            } else {
+                alert('Acesso negado!');
+            }
+        }
+
+        // Esconder admin
+        function hideAdmin() {
+            document.getElementById('adminSection').classList.add('hidden');
+        }
+
+        // Para mostrar admin (adicione um botão secreto no HTML se quiser)
+        // Exemplo: <button onclick="document.getElementById('adminSection').classList.remove('hidden')">Admin</button>
+    </script>
+</body>
+</html>
